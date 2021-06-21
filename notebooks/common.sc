@@ -1,4 +1,11 @@
 import $ivy.`org.apache.spark::spark-sql:2.4.5` 
+import $ivy.`org.plotly-scala::plotly-almond:0.8.1`
+import $ivy.`ch.cern.sparkmeasure:spark-measure_2.12:0.17`
+
+import plotly._
+import plotly.element._
+import plotly.layout._
+import plotly.Almond._
 
 import org.apache.spark.sql.{NotebookSparkSession, SparkSession}
 
@@ -22,14 +29,11 @@ import org.apache.spark._
 import org.apache.spark.sql.types._, func._
 import org.apache.spark.sql.functions.{col, to_date}
 
-import $ivy.`org.plotly-scala::plotly-almond:0.8.1`
-
 import plotly._
 import plotly.element._
 import plotly.layout._
 import plotly.Almond._
 
-import $ivy.`ch.cern.sparkmeasure:spark-measure_2.12:0.17`
 
 import org.slf4j.LoggerFactory
 import org.apache.log4j.{Level, Logger}
