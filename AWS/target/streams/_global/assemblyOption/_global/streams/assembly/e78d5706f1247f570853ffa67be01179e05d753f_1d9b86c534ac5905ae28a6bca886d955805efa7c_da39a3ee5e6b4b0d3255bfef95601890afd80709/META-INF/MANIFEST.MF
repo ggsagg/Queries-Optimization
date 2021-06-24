@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Implementation-Title: pureconfig-macros
+Implementation-Version: 0.12.0
+Specification-Vendor: com.github.pureconfig
+Specification-Title: pureconfig-macros
+Implementation-Vendor-Id: com.github.pureconfig
+Specification-Version: 0.12.0
+Implementation-URL: https://github.com/pureconfig/pureconfig
+Implementation-Vendor: com.github.pureconfig
+
