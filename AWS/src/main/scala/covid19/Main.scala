@@ -4,7 +4,6 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
-
 object Main extends App {
 
   val spark =
@@ -34,7 +33,7 @@ object Main extends App {
     println(s"Took ${System.currentTimeMillis() - start}")
     out.toInt
   }
-
+//to load data from AWS S3 = s3://spark-aws-tfg/datasets/data.csv
   val infectionData = spark.sparkContext.textFile("s3://spark-aws-tfg/datasets/data.csv")
 
   def infections(lines: RDD[String]): RDD[Infection] =
@@ -96,18 +95,16 @@ object Main extends App {
 
   org.apache.spark.sql.catalyst.encoders.OuterScopes.addOuterScope(this)
 
-  case class Population(
-                         country: String,
+  case class Population(country: String,
                          population: Int,
                          density: Int,
-                         land_area: Int
-                       )
-    extends Serializable
+                         land_area: Int) extends Serializable
 
-  val header = populationData.first()
+//  val header = populationData.first()
 
-  def population(lines: RDD[String]): RDD[Population] =
-    lines.filter(x => x != header)
+  def population(lines: RDD[String]): RDD[Population] = {
+    val h = lines.first()
+    lines.filter(x => x != h)
       .map(line => {
         val arr = line.split(",")
         Population(
@@ -115,6 +112,7 @@ object Main extends App {
           population = arr(1).toInt,
           density = arr(4).toInt,
           land_area = arr(5).toInt)})
+  }
 
   def populationRDD = population(populationData)
 
@@ -367,42 +365,120 @@ object Main extends App {
     .withColumn("infection-vaccination rate", round($"infection-vaccination rate",8))
     .withColumn("vaccination Per Population", round($"vaccination Per Population",8))
 
+//PARQUET FILES
+  val parqDF = spark.read.parquet("s3://spark-aws-tfg/parquet_files/covid_countries.parquet")
+  val parqPopDF = spark.read.parquet("s3://spark-aws-tfg/parquet_files/covid_population.parquet")
+
+  val csvPopulation = dfPopulation
+    .withColumnRenamed("Density (P/Km²)","Density")
+    .withColumnRenamed("Land Area (Km²)","Area")
+    .withColumnRenamed("Migrants (net)", "Migrants")
+    .withColumnRenamed("Fert. Rate", "Fertility")
+    .withColumnRenamed("Med. Age","Med_age")
+    .withColumnRenamed("Urban Pop %","urban_population")
+    .withColumnRenamed("World Share","World_share")
+    .withColumnRenamed("Country (or dependency)","Country")
+    .withColumnRenamed("Population (2020)","Population")
+
+  def parqMeanDF = parqDF.toDF
+    .where("countriesAndTerritories == 'Spain'")
+    .agg(mean("cases"))
+    .orderBy("avg(cases)")
+
+  def csvMeanDF = dfCovid.toDF
+    .where("countriesAndTerritories == 'Spain'")
+    .agg(mean("cases"))
+    .orderBy("avg(cases)")
+
+  def csvCasesKM2 =
+    dfCovid.join(csvPopulation, $"country" === $"countriesAndTerritories")
+      .where("countriesAndTerritories == 'Spain'")
+      .select($"country",
+        $"dateRep" as "date",
+        $"cases",
+        $"Area",
+        $"cases" / $"Area" as "infection Per Km\u00b2")
+      .groupBy("country")
+      .avg("infection Per Km\u00b2")
+      .orderBy(desc("avg(infection Per Km²)"))
+
+  def parquetCasesKM2 =
+    parqDF.join(parqPopDF, $"country" === $"countriesAndTerritories")
+      .where("countriesAndTerritories == 'Spain'")
+      .select($"country",
+        $"dateRep" as "date",
+        $"cases",
+        $"Area",
+        $"cases" / $"Area" as "infection Per Km\u00b2")
+      .groupBy("country")
+      .avg("infection Per Km\u00b2")
+      .orderBy(desc("avg(infection Per Km²)"))
+
+  def csvCasesPopulation =
+    parqDF.join(parqPopDF, $"country" === $"countriesAndTerritories")
+      .where("countriesAndTerritories == 'Chile'")
+      .select($"country",
+        $"dateRep" as "date",
+        $"cases",
+        $"Population",
+        $"cases" / $"Population" as "infection Per Population")
+      .groupBy("country")
+      .avg("infection Per Population")
+      .orderBy(desc("avg(infection Per Population)"))
+
+  def parquetCasesPopulation =
+    dfCovid.join(csvPopulation, $"country" === $"countriesAndTerritories")
+      .where("countriesAndTerritories == 'Chile'")
+      .select($"country",
+        $"dateRep" as "date",
+        $"cases",
+        $"Population",
+        $"cases" / $"Population" as "infection Per Population")
+      .groupBy("country")
+      .avg("infection Per Population")
+      .orderBy(desc("avg(infection Per Population)"))
+
+  def csvDailyCasesRate =
+    dfCovid.join(csvPopulation, $"country" === $"countriesAndTerritories")
+      .select($"country",
+        $"dateRep",
+        $"day",
+        $"month",
+        $"cases",
+        $"Population",
+        $"cases" / $"Population" as "infection Per Population")
+      .orderBy($"dateRep".asc)
+
+  def parquetDailyCasesRate =
+    parqDF.join(parqPopDF, $"country" === $"countriesAndTerritories")
+      .select($"country",
+        $"dateRep",
+        $"day",
+        $"month",
+        $"cases",
+        $"Population",
+        $"cases" / $"Population" as "infection Per Population")
+      .orderBy($"dateRep".asc)
+
   println("Querie 1 Media diaria de infecciones:")
 
-  println("RDD Media de casos diarios \n")
+  println("RDD Media de casos diarios")
 
   val timeRDD = spark.time(infectionAvgRDD.collect())
-  println("\n")
-
-  println("DF Media de casos diarios\n")
-
+  println("DF Media de casos diarios")
   val timeDF = spark.time(dfCovidWithSchema.collect)
-  println("\n")
-
-  println("DS Media de casos diarios\n")
-
+  println("DS Media de casos diarios")
   val timeDS = spark.time(avgDS.collect)
   println("\n")
 
   println("Querie 2 infecciones por Km2:")
-
-  println("RDD no optimizado infecciones por Km2 \n")
-
+  println("RDD no optimizado infecciones por Km2")
   spark.time(notOptimizedRDD.collect)
-  println("\n")
-
-  println("RDD optimizado infecciones por Km2 \n")
-
+  println("RDD optimizado infecciones por Km2")
   spark.time(meanInfectionsRDD.collect)
-  println("\n")
-
-  println("DS infecciones por Km2 \n")
-
+  println("DS infecciones por Km2")
   spark.time(meanInfectionsperKM2DS.collect)
-  println("\n")
-
-  println("DF infecciones por Km2 \n")
-
+  println("DF infecciones por Km2")
   spark.time(meanInfectionsperKM2DF.collect)
   println("\n")
 
@@ -410,7 +486,6 @@ object Main extends App {
 
   println("DS")
   spark.time(diaryInfectionPerPopulationDS)
-  println("\n")
   println("DF")
   spark.time(diaryInfectionsDF)
   println("\n")
@@ -419,7 +494,6 @@ object Main extends App {
 
   println("DS")
   spark.time(meanInfectionPerPopulationDS)
-  println("\n")
   println("DF")
   spark.time(infectionsPerPopulation)
   println("\n")
@@ -428,10 +502,41 @@ object Main extends App {
 
   println("DS")
   spark.time(megaDS.collect)
-  println("\n")
   println("DF")
   spark.time(megaDF.collect)
   println("\n")
 
+  println("Queries con parquet:")
+  println("Querie 1 Parquet Media diaria de infecciones en España")
+  spark.time(parqMeanDF.collect)
+  println("\n")
+
+  println("Querie 1 CSV Media diaria de infecciones en España")
+  spark.time(csvMeanDF.collect)
+  println("\n")
+
+  println("Querie 2 parquet infecciones por Km2 en España")
+  spark.time(parquetCasesKM2.collect)
+  println("\n")
+
+  println("Querie 2 csv infecciones por Km2 en España")
+  spark.time(csvCasesKM2.collect)
+  println("\n")
+
+  println("Querie 3 parquet casos por densidad de población en Chile")
+  spark.time(parquetCasesPopulation.collect)
+  println("\n")
+
+  println("Querie 3 csv casos por densidad de población en Chile")
+  spark.time(csvCasesPopulation.collect)
+  println("\n")
+
+  println("Querie 4 parquet porcentaje diario de infectados")
+  spark.time(parquetCasesPopulation.collect)
+  println("\n")
+
+  println("Querie 4 csv porcentaje diario de infectados")
+  spark.time(csvCasesPopulation.collect)
+  println("\n")
 
 }
