@@ -49,6 +49,12 @@ case class Infection(day : Int,
                      continent : String) 
 extends Serializable
 
+org.apache.spark.sql.catalyst.encoders.OuterScopes.addOuterScope(this)
+class AvgCollector(val tot: Int, val cnt: Int = 1) extends Serializable {
+  def combine(that: AvgCollector) = new AvgCollector(tot + that.tot, cnt + that.cnt)
+  def avg = tot / cnt 
+}
+
 
 def runWithOutput[A](code: => A): Int = {
     val start = System.currentTimeMillis()
