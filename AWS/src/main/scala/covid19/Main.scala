@@ -35,7 +35,7 @@ object Main extends App {
   }
 //to load data from AWS S3 = s3://spark-aws-tfg/datasets/data.csv
   val infectionData = spark.sparkContext.textFile("s3://spark-aws-tfg/datasets/data.csv")
-
+  spark.conf.set("spark.sql.shuffle.partitions", 24)
   def infections(lines: RDD[String]): RDD[Infection] =
     lines.map(line => {
       val arr = line.split(",")
