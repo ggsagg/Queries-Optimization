@@ -17,7 +17,7 @@ Under this folder are allocated the diverse datasets (csv files) which will be u
 ### Notebooks
 
 Jupyter Notebooks with the different querys and their optimizations. The standard use case will be the query in spark.RDD, in spark.Dataset and in spark.Dataframe.
-Finally will be shown the execution times in a plotly chart bar.
+Finally the execution times will be shown in a plotly chart bar.
 
 ### Parquet Files
 
