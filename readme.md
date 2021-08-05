@@ -1,6 +1,6 @@
 # Querys Optimization
 
-## Using Apache Spark and AWS to measure and observe different querys optimizations
+## Using Apache Spark and AWS to measure and observe different querys optimizations using Covid19 DATA
 
 This project studies different querys under a Covid19 dataset as a case study to observe different optimizations and architectures in Apache Spark.
 
