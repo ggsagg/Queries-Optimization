@@ -1,4 +1,4 @@
-# Querys Optimization
+# Queries Optimization
 
 ## Using Apache Spark and AWS to measure and observe different querys optimizations using Covid19 DATA
 
