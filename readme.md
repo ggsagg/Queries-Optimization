@@ -1,8 +1,8 @@
 # Queries Optimization
 
-## Using Apache Spark and AWS to measure and observe different querys optimizations using Covid19 DATA
+## Using Apache Spark and AWS to measure and observe different queries optimizations using Covid19 DATA
 
-This project studies different querys under a Covid19 dataset as a case study to observe different optimizations and architectures in Apache Spark.
+This project studies different queries under a Covid19 dataset as a case study to observe different optimizations and architectures in Apache Spark.
 
 ## Project Structure
 
@@ -12,11 +12,11 @@ SBT Project and Shell script to be deployed on an AWS EMR Cluster
 
 ### Datasets
 
-Under this folder are allocated the diverse datasets (csv files) which will be used to obtain the querys
+Under this folder are allocated the diverse datasets (csv files) which will be used to obtain the queries
 
 ### Notebooks
 
-Jupyter Notebooks with the different querys and their optimizations. The standard use case will be the query in spark.RDD, in spark.Dataset and in spark.Dataframe.
+Jupyter Notebooks with the different queries and their optimizations. The standard use case will be the query in spark.RDD, in spark.Dataset and in spark.Dataframe.
 Finally the execution times will be shown in a plotly chart bar.
 
 ### Parquet Files
